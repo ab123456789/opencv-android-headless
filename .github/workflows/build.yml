@@ -31,6 +31,10 @@ on:
         description: 'Target site-packages path'
         required: false
         default: '/data/data/com.termux/files/usr/lib/python3.13/site-packages'
+      python_numpy_include_dirs:
+        description: 'Target NumPy include dirs'
+        required: false
+        default: ''
 
 jobs:
   build:
@@ -38,6 +42,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up host Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
 
       - name: Install build deps
         run: |
@@ -49,10 +58,9 @@ jobs:
             unzip \
             zip \
             pkg-config \
-            git \
-            python3 \
-            python3-dev \
-            python3-pip
+            git
+          python --version
+          python -m pip --version
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -93,10 +101,13 @@ jobs:
 
       - name: Show target inputs
         run: |
+          echo "host_python=$(which python)"
+          python --version
           echo "python_version=${{ github.event.inputs.python_version || '3.13' }}"
           echo "python_include_dir=${{ github.event.inputs.python_include_dir }}"
           echo "python_library=${{ github.event.inputs.python_library }}"
           echo "python_packages_path=${{ github.event.inputs.python_packages_path || '/data/data/com.termux/files/usr/lib/python3.13/site-packages' }}"
+          echo "python_numpy_include_dirs=${{ github.event.inputs.python_numpy_include_dirs }}"
 
       - name: Configure and build
         env:
@@ -104,15 +115,18 @@ jobs:
           ANDROID_API: ${{ github.event.inputs.android_api || '24' }}
           ANDROID_ABI: ${{ github.event.inputs.android_abi || 'arm64-v8a' }}
           PYTHON_VERSION: ${{ github.event.inputs.python_version || '3.13' }}
-          PYTHON3_EXECUTABLE: /usr/bin/python3
+          PYTHON3_EXECUTABLE: ${{ env.pythonLocation }}/bin/python
           PYTHON_INCLUDE_DIR: ${{ github.event.inputs.python_include_dir }}
           PYTHON_LIBRARY: ${{ github.event.inputs.python_library }}
           PYTHON_PACKAGES_PATH: ${{ github.event.inputs.python_packages_path || '/data/data/com.termux/files/usr/lib/python3.13/site-packages' }}
+          PYTHON_NUMPY_INCLUDE_DIRS: ${{ github.event.inputs.python_numpy_include_dirs }}
           TERMUX_PREFIX: ${{ env.TERMUX_PREFIX }}
           BUILD_DIR: ${{ github.workspace }}/build
           INSTALL_PREFIX: ${{ github.workspace }}/out/install
         run: |
           echo "ANDROID_NDK=$ANDROID_NDK"
+          echo "PYTHON3_EXECUTABLE=$PYTHON3_EXECUTABLE"
+          "$PYTHON3_EXECUTABLE" --version
           test -n "$ANDROID_NDK" || { echo 'ANDROID_NDK is required'; exit 1; }
           test -n "$PYTHON_INCLUDE_DIR" || { echo 'python_include_dir is required for a real Termux Python 3.13 target build'; exit 1; }
           test -n "$PYTHON_LIBRARY" || { echo 'python_library is required for a real Termux Python 3.13 target build'; exit 1; }
@@ -125,6 +139,7 @@ jobs:
           [ -d build ] && tar -czf artifacts/build.tar.gz build || true
           [ -d out ] && tar -czf artifacts/out.tar.gz out || true
           find . -name 'cv2*.so' -print -exec cp -f {} artifacts/ \; || true
+          find . -path '*/site-packages/*' -type f -print | sed -n '1,200p' || true
           find . -maxdepth 3 -type f \( -name 'CMakeCache.txt' -o -name '*.log' \) -print -exec cp -f {} artifacts/ \; || true
 
       - name: Upload artifacts

@@ -9,12 +9,16 @@ set -euo pipefail
 : "${PYTHON_LIBRARY:?PYTHON_LIBRARY is required}"
 : "${PYTHON3_EXECUTABLE:?PYTHON3_EXECUTABLE is required}"
 : "${PYTHON_PACKAGES_PATH:=/data/data/com.termux/files/usr/lib/python3.13/site-packages}"
+: "${PYTHON_NUMPY_INCLUDE_DIRS:=}"
 : "${TERMUX_PREFIX:?TERMUX_PREFIX is required}"
 : "${BUILD_DIR:=build}"
 : "${INSTALL_PREFIX:=$PWD/out/install}"
 
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
+
+PYTHON_ROOT_DIR="$(dirname "$(dirname "$PYTHON_INCLUDE_DIR")")"
+PYTHON_PACKAGES_DIRNAME="$(basename "$PYTHON_PACKAGES_PATH")"
 
 cmake ../opencv \
   -G Ninja \
@@ -51,12 +55,35 @@ cmake ../opencv \
   -DBUILD_opencv_python2=OFF \
   -DBUILD_opencv_python3=ON \
   -DOPENCV_PYTHON3_INSTALL_PATH="$PYTHON_PACKAGES_PATH" \
+  -DPYTHON_DEFAULT_EXECUTABLE="$PYTHON3_EXECUTABLE" \
+  -DPYTHON_DEFAULT_VERSION=3 \
+  -DPYTHON_INCLUDE_DIR="$PYTHON_INCLUDE_DIR" \
+  -DPYTHON_LIBRARY="$PYTHON_LIBRARY" \
+  -DPYTHON_PACKAGES_PATH="$PYTHON_PACKAGES_PATH" \
   -DPYTHON3_EXECUTABLE="$PYTHON3_EXECUTABLE" \
   -DPYTHON3_INCLUDE_DIR="$PYTHON_INCLUDE_DIR" \
   -DPYTHON3_LIBRARY="$PYTHON_LIBRARY" \
-  -DPYTHON3_PACKAGES_PATH="$PYTHON_PACKAGES_PATH"
+  -DPYTHON3_PACKAGES_PATH="$PYTHON_PACKAGES_PATH" \
+  -DPython3_EXECUTABLE="$PYTHON3_EXECUTABLE" \
+  -DPython3_INCLUDE_DIR="$PYTHON_INCLUDE_DIR" \
+  -DPython3_LIBRARY="$PYTHON_LIBRARY" \
+  -DPython3_ROOT_DIR="$PYTHON_ROOT_DIR" \
+  -DPython3_FIND_STRATEGY=LOCATION \
+  -DPython3_FIND_IMPLEMENTATIONS=CPython \
+  -DPython3_FIND_REGISTRY=NEVER \
+  -DPython3_FIND_FRAMEWORK=NEVER \
+  -DPYTHON3_NUMPY_INCLUDE_DIRS="$PYTHON_NUMPY_INCLUDE_DIRS" \
+  -DPython3_NumPy_INCLUDE_DIRS="$PYTHON_NUMPY_INCLUDE_DIRS"
+
+printf '\n==== Python/OpenCV CMake diagnosis ====\n'
+grep -E '^(PYTHON|Python3|OPENCV_PYTHON|BUILD_opencv_python|BUILD_LIST|CMAKE_TOOLCHAIN_FILE|ANDROID_)' CMakeCache.txt | sort || true
+printf '\n==== Python/OpenCV internal status ====\n'
+grep -E '^(HAVE_opencv_python3|PYTHON3LIBS_FOUND|PYTHON3_LIBRARIES|PYTHON3_INCLUDE_PATH|PYTHON3_VERSION_STRING|PYTHON3_NUMPY_VERSION|OPENCV_MODULES_DISABLED_FORCE|OPENCV_MODULE_opencv_python3_LOCATION)' CMakeCache.txt || true
 
 cmake --build . --parallel
 cmake --install .
+
+printf '\n==== Produced Python artifacts ====\n'
+find . "$INSTALL_PREFIX" -path '*/site-packages/*' -o -name 'cv2*.so' | sort || true
 
 echo "Build complete: $INSTALL_PREFIX"
