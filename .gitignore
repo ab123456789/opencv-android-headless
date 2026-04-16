@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Build outputs
+build/
+dist/
+out/
+artifacts/
+*.tar.gz
+*.zip
+
+# OpenCV source trees
+opencv/
+opencv_contrib/
+
+# Local notes
+*.log

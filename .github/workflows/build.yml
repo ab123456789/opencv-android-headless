@@ -1,0 +1,118 @@
+name: Build Android Termux OpenCV
+
+on:
+  workflow_dispatch:
+    inputs:
+      opencv_ref:
+        description: 'OpenCV tag or branch'
+        required: false
+        default: '4.10.0'
+      android_api:
+        description: 'Android API level'
+        required: false
+        default: '24'
+      android_abi:
+        description: 'Android ABI'
+        required: false
+        default: 'arm64-v8a'
+      python_version:
+        description: 'Target Python version'
+        required: false
+        default: '3.13'
+      python_include_dir:
+        description: 'Target Python include dir (Termux/Android target)'
+        required: false
+        default: ''
+      python_library:
+        description: 'Target libpython path (Termux/Android target)'
+        required: false
+        default: ''
+      python_packages_path:
+        description: 'Target site-packages path'
+        required: false
+        default: '/data/data/com.termux/files/usr/lib/python3.13/site-packages'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ninja-build \
+            cmake \
+            curl \
+            unzip \
+            zip \
+            pkg-config \
+            git \
+            python3 \
+            python3-dev \
+            python3-pip
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26d
+
+      - name: Fetch OpenCV sources
+        env:
+          OPENCV_REF: ${{ github.event.inputs.opencv_ref || '4.10.0' }}
+          WORKDIR: ${{ github.workspace }}
+        run: bash scripts/fetch_sources.sh
+
+      - name: Prepare pseudo-Termux prefix
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/termux-prefix/lib/python3.13/site-packages"
+          echo "TERMUX_PREFIX=$GITHUB_WORKSPACE/termux-prefix" >> "$GITHUB_ENV"
+
+      - name: Show target inputs
+        run: |
+          echo "python_version=${{ github.event.inputs.python_version || '3.13' }}"
+          echo "python_include_dir=${{ github.event.inputs.python_include_dir }}"
+          echo "python_library=${{ github.event.inputs.python_library }}"
+          echo "python_packages_path=${{ github.event.inputs.python_packages_path || '/data/data/com.termux/files/usr/lib/python3.13/site-packages' }}"
+
+      - name: Configure and build
+        env:
+          ANDROID_NDK: ${{ env.ANDROID_NDK_ROOT }}
+          ANDROID_API: ${{ github.event.inputs.android_api || '24' }}
+          ANDROID_ABI: ${{ github.event.inputs.android_abi || 'arm64-v8a' }}
+          PYTHON_VERSION: ${{ github.event.inputs.python_version || '3.13' }}
+          PYTHON3_EXECUTABLE: /usr/bin/python3
+          PYTHON_INCLUDE_DIR: ${{ github.event.inputs.python_include_dir }}
+          PYTHON_LIBRARY: ${{ github.event.inputs.python_library }}
+          PYTHON_PACKAGES_PATH: ${{ github.event.inputs.python_packages_path || '/data/data/com.termux/files/usr/lib/python3.13/site-packages' }}
+          TERMUX_PREFIX: ${{ env.TERMUX_PREFIX }}
+          BUILD_DIR: ${{ github.workspace }}/build
+          INSTALL_PREFIX: ${{ github.workspace }}/out/install
+        run: |
+          test -n "$PYTHON_INCLUDE_DIR" || { echo 'python_include_dir is required for a real Termux Python 3.13 target build'; exit 1; }
+          test -n "$PYTHON_LIBRARY" || { echo 'python_library is required for a real Termux Python 3.13 target build'; exit 1; }
+          bash scripts/configure_and_build.sh
+
+      - name: Collect outputs
+        if: always()
+        run: |
+          mkdir -p artifacts
+          [ -d build ] && tar -czf artifacts/build.tar.gz build || true
+          [ -d out ] && tar -czf artifacts/out.tar.gz out || true
+          find . -name 'cv2*.so' -print -exec cp -f {} artifacts/ \; || true
+          find . -maxdepth 3 -type f \( -name 'CMakeCache.txt' -o -name '*.log' \) -print -exec cp -f {} artifacts/ \; || true
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencv-android-termux-py313-${{ github.run_number }}
+          path: artifacts/
