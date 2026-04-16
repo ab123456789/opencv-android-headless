@@ -58,3 +58,5 @@
 1. 先用 workflow 验证 OpenCV core 的 Android 交叉编译链路
 2. 再补 Termux / Python 3.13 目标头文件与库来源
 3. 最后在真实 Termux Python 3.13 环境里做 `import cv2` smoke test
+
+<!-- trigger actions indexing -->
