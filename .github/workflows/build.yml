@@ -85,7 +85,7 @@ jobs:
 
       - name: Configure and build
         env:
-          ANDROID_NDK: ${{ env.ANDROID_NDK_ROOT }}
+          ANDROID_NDK: ${{ env.ANDROID_NDK }}
           ANDROID_API: ${{ github.event.inputs.android_api || '24' }}
           ANDROID_ABI: ${{ github.event.inputs.android_abi || 'arm64-v8a' }}
           PYTHON_VERSION: ${{ github.event.inputs.python_version || '3.13' }}
@@ -97,6 +97,8 @@ jobs:
           BUILD_DIR: ${{ github.workspace }}/build
           INSTALL_PREFIX: ${{ github.workspace }}/out/install
         run: |
+          echo "ANDROID_NDK=$ANDROID_NDK"
+          test -n "$ANDROID_NDK" || { echo 'ANDROID_NDK is required'; exit 1; }
           test -n "$PYTHON_INCLUDE_DIR" || { echo 'python_include_dir is required for a real Termux Python 3.13 target build'; exit 1; }
           test -n "$PYTHON_LIBRARY" || { echo 'python_library is required for a real Termux Python 3.13 target build'; exit 1; }
           bash scripts/configure_and_build.sh
