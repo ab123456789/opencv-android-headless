@@ -70,8 +70,14 @@ jobs:
           NDK_BUILD_PATH="$(command -v ndk-build || true)"
           echo "ndk-build=$NDK_BUILD_PATH"
           test -n "$NDK_BUILD_PATH" || { echo 'ndk-build not found in PATH'; exit 1; }
-          ANDROID_NDK="$(cd "$(dirname "$NDK_BUILD_PATH")/.." && pwd)"
+
+          TOOLCHAIN_FILE="$(find -L /opt/hostedtoolcache/ndk -path '*/build/cmake/android.toolchain.cmake' | head -n 1)"
+          echo "toolchain_file=$TOOLCHAIN_FILE"
+          test -n "$TOOLCHAIN_FILE" || { echo 'android.toolchain.cmake not found'; exit 1; }
+
+          ANDROID_NDK="$(cd "$(dirname "$TOOLCHAIN_FILE")/../.." && pwd)"
           echo "ANDROID_NDK=$ANDROID_NDK"
+          ls -la "$ANDROID_NDK/build/cmake"
           echo "ANDROID_NDK=$ANDROID_NDK" >> "$GITHUB_ENV"
 
       - name: Fetch OpenCV sources
