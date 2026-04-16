@@ -65,6 +65,15 @@ jobs:
         with:
           ndk-version: r26d
 
+      - name: Resolve Android NDK path
+        run: |
+          NDK_BUILD_PATH="$(command -v ndk-build || true)"
+          echo "ndk-build=$NDK_BUILD_PATH"
+          test -n "$NDK_BUILD_PATH" || { echo 'ndk-build not found in PATH'; exit 1; }
+          ANDROID_NDK="$(cd "$(dirname "$NDK_BUILD_PATH")/.." && pwd)"
+          echo "ANDROID_NDK=$ANDROID_NDK"
+          echo "ANDROID_NDK=$ANDROID_NDK" >> "$GITHUB_ENV"
+
       - name: Fetch OpenCV sources
         env:
           OPENCV_REF: ${{ github.event.inputs.opencv_ref || '4.10.0' }}
