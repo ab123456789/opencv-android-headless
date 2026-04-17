@@ -47,6 +47,10 @@ on:
         description: 'URL to tar.gz containing target include/python3.13 and lib/libpython3.13.so'
         required: false
         default: ''
+      python_numpy_archive_url:
+        description: 'URL to tar.gz containing target numpy/_core/include'
+        required: false
+        default: ''
 
 jobs:
   build:
@@ -128,6 +132,21 @@ jobs:
           test -f "$GITHUB_WORKSPACE/termux-python-dev/include/python3.13/Python.h"
           test -f "$GITHUB_WORKSPACE/termux-python-dev/lib/libpython3.13.so"
 
+      - name: Prepare target NumPy headers
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/termux-numpy-dev"
+          if [ -n "${{ github.event.inputs.python_numpy_archive_url }}" ]; then
+            curl -L --fail "${{ github.event.inputs.python_numpy_archive_url }}" -o "$GITHUB_WORKSPACE/termux-numpy-dev.tar.gz"
+            tar -xzf "$GITHUB_WORKSPACE/termux-numpy-dev.tar.gz" -C "$GITHUB_WORKSPACE/termux-numpy-dev"
+          elif [ -n "${{ github.event.inputs.python_numpy_include_dirs }}" ] && [ -f "${{ github.event.inputs.python_numpy_include_dirs }}/numpy/ndarrayobject.h" ]; then
+            mkdir -p "$GITHUB_WORKSPACE/termux-numpy-dev/numpy/_core"
+            cp -a "${{ github.event.inputs.python_numpy_include_dirs }}" "$GITHUB_WORKSPACE/termux-numpy-dev/numpy/_core/"
+          else
+            echo 'No usable target NumPy headers supplied. Set python_numpy_archive_url or provide local existing numpy include path.'
+            exit 1
+          fi
+          test -f "$GITHUB_WORKSPACE/termux-numpy-dev/numpy/_core/include/numpy/ndarrayobject.h"
+
       - name: Show target inputs
         run: |
           echo "host_python=$(which python)"
@@ -140,8 +159,10 @@ jobs:
           echo "python_ext_suffix=${{ github.event.inputs.python_ext_suffix || '.so' }}"
           echo "python_soabi=${{ github.event.inputs.python_soabi }}"
           echo "python_dev_archive_url=${{ github.event.inputs.python_dev_archive_url }}"
+          echo "python_numpy_archive_url=${{ github.event.inputs.python_numpy_archive_url }}"
           ls -lah "$GITHUB_WORKSPACE/termux-python-dev/include/python3.13" | sed -n '1,20p'
           ls -lah "$GITHUB_WORKSPACE/termux-python-dev/lib/libpython3.13.so"
+          ls -lah "$GITHUB_WORKSPACE/termux-numpy-dev/numpy/_core/include/numpy" | sed -n '1,20p'
 
       - name: Configure and build
         env:
@@ -153,7 +174,7 @@ jobs:
           PYTHON_INCLUDE_DIR: ${{ github.workspace }}/termux-python-dev/include/python3.13
           PYTHON_LIBRARY: ${{ github.workspace }}/termux-python-dev/lib/libpython3.13.so
           PYTHON_PACKAGES_PATH: ${{ github.event.inputs.python_packages_path || '/data/data/com.termux/files/usr/lib/python3.13/site-packages' }}
-          PYTHON_NUMPY_INCLUDE_DIRS: ${{ github.event.inputs.python_numpy_include_dirs }}
+          PYTHON_NUMPY_INCLUDE_DIRS: ${{ github.workspace }}/termux-numpy-dev/numpy/_core/include
           PYTHON_EXT_SUFFIX: ${{ github.event.inputs.python_ext_suffix || '.so' }}
           PYTHON_SOABI: ${{ github.event.inputs.python_soabi }}
           OPENCV_ENABLE_ANDROID_PYTHON: 'ON'
