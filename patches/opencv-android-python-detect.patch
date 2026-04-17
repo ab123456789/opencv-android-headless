@@ -87,12 +87,19 @@ index cd6c279..dab4c72 100644
    set(CVPY_SUFFIX "${${PYTHON}_CVPY_SUFFIX}")
  else()
    set(__python_ext_suffix_var "EXT_SUFFIX")
-@@ -104,6 +110,10 @@ set_target_properties(${the_module} PROPERTIES
+@@ -104,6 +110,16 @@ set_target_properties(${the_module} PROPERTIES
                        OUTPUT_NAME cv2
                        SUFFIX "${CVPY_SUFFIX}")
  
 +if(ANDROID)
 +  set_property(TARGET ${the_module} PROPERTY NO_SONAME ON)
++  get_target_property(_opencv_python_link_flags ${the_module} LINK_FLAGS)
++  if(_opencv_python_link_flags)
++    string(REGEX REPLACE "(^| )-version( |$)" " " _opencv_python_link_flags "${_opencv_python_link_flags}")
++    string(REGEX REPLACE "  +" " " _opencv_python_link_flags "${_opencv_python_link_flags}")
++    string(STRIP "${_opencv_python_link_flags}" _opencv_python_link_flags)
++    set_target_properties(${the_module} PROPERTIES LINK_FLAGS "${_opencv_python_link_flags}")
++  endif()
 +endif()
 +
  if(ENABLE_SOLUTION_FOLDERS)
