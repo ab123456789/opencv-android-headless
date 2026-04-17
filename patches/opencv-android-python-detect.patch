@@ -1,3 +1,66 @@
+diff --git a/cmake/OpenCVDetectPython.cmake b/cmake/OpenCVDetectPython.cmake
+index a23fba6..02aa143 100644
+--- a/cmake/OpenCVDetectPython.cmake
++++ b/cmake/OpenCVDetectPython.cmake
+@@ -173,6 +173,24 @@ if(NOT ${found})
+         unset(PYTHON_INCLUDE_DIR CACHE)
+         unset(PYTHON_INCLUDE_DIR2 CACHE)
+       endif()
++    elseif(ANDROID)
++      ocv_check_environment_variables(${library_env} ${include_dir_env})
++      if(NOT ${${library_env}} STREQUAL "")
++        set(_libs_found TRUE)
++        set(_libraries "${${library_env}}")
++        set(_library "${${library_env}}")
++      endif()
++      if(NOT ${${include_dir_env}} STREQUAL "")
++        set(_include_path "${${include_dir_env}}")
++        set(_include_dir "${${include_dir_env}}")
++      endif()
++      if(_libs_found AND _include_dir)
++        if(NOT _libs_version_string)
++          set(_libs_version_string "${_version_string}")
++        endif()
++      else()
++        unset(_libs_found)
++      endif()
+     endif()
+ 
+     if(NOT ANDROID AND NOT IOS AND NOT XROS)
+@@ -240,6 +258,15 @@ if(NOT ${found})
+                           OUTPUT_STRIP_TRAILING_WHITESPACE)
+         endif()
+       endif()
++    elseif(ANDROID)
++      set(_packages_path "${${packages_path}}")
++      set(_numpy_include_dirs "${${numpy_include_dirs}}")
++      if(NOT _numpy_version)
++        set(_numpy_version "android-crosscompile")
++      endif()
++      if(_libs_found AND _include_dir)
++        set(_include_path "${_include_dir}")
++      endif()
+     endif(NOT ANDROID AND NOT IOS AND NOT XROS)
+   endif()
+ 
+diff --git a/modules/python/CMakeLists.txt b/modules/python/CMakeLists.txt
+index 93eab8c..4bdf951 100644
+--- a/modules/python/CMakeLists.txt
++++ b/modules/python/CMakeLists.txt
+@@ -3,10 +3,12 @@
+ # ----------------------------------------------------------------------------
+ if(DEFINED OPENCV_INITIAL_PASS)  # OpenCV build
+ 
+-if(ANDROID OR APPLE_FRAMEWORK OR WINRT)
++if((ANDROID AND NOT OPENCV_ENABLE_ANDROID_PYTHON) OR APPLE_FRAMEWORK OR WINRT)
+   ocv_module_disable_(python2)
+   ocv_module_disable_(python3)
+   return()
++elseif(ANDROID AND OPENCV_ENABLE_ANDROID_PYTHON)
++  ocv_module_disable_(python2)
+ elseif(BUILD_opencv_world OR (WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug"))
+   if(NOT DEFINED BUILD_opencv_python2)
+     set(__disable_python2 ON)
 diff --git a/modules/python/python3/CMakeLists.txt b/modules/python/python3/CMakeLists.txt
 index da86ba5..dc9ea0f 100644
 --- a/modules/python/python3/CMakeLists.txt
