@@ -43,6 +43,10 @@ on:
         description: 'Target Python SOABI (example: cpython-313)'
         required: false
         default: ''
+      python_dev_archive_url:
+        description: 'URL to tar.gz containing target include/python3.13 and lib/libpython3.13.so'
+        required: false
+        default: ''
 
 jobs:
   build:
@@ -107,6 +111,23 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/termux-prefix/lib/python3.13/site-packages"
           echo "TERMUX_PREFIX=$GITHUB_WORKSPACE/termux-prefix" >> "$GITHUB_ENV"
 
+      - name: Prepare target Python dev files
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/termux-python-dev"
+          if [ -n "${{ github.event.inputs.python_dev_archive_url }}" ]; then
+            curl -L --fail "${{ github.event.inputs.python_dev_archive_url }}" -o "$GITHUB_WORKSPACE/termux-python-dev.tar.gz"
+            tar -xzf "$GITHUB_WORKSPACE/termux-python-dev.tar.gz" -C "$GITHUB_WORKSPACE/termux-python-dev"
+          elif [ -n "${{ github.event.inputs.python_include_dir }}" ] && [ -f "${{ github.event.inputs.python_include_dir }}/Python.h" ] && [ -n "${{ github.event.inputs.python_library }}" ] && [ -f "${{ github.event.inputs.python_library }}" ]; then
+            mkdir -p "$GITHUB_WORKSPACE/termux-python-dev/include" "$GITHUB_WORKSPACE/termux-python-dev/lib"
+            cp -a "${{ github.event.inputs.python_include_dir }}" "$GITHUB_WORKSPACE/termux-python-dev/include/"
+            cp -a "${{ github.event.inputs.python_library }}" "$GITHUB_WORKSPACE/termux-python-dev/lib/"
+          else
+            echo 'No usable target Python dev files supplied. Set python_dev_archive_url or provide local existing include/lib paths.'
+            exit 1
+          fi
+          test -f "$GITHUB_WORKSPACE/termux-python-dev/include/python3.13/Python.h"
+          test -f "$GITHUB_WORKSPACE/termux-python-dev/lib/libpython3.13.so"
+
       - name: Show target inputs
         run: |
           echo "host_python=$(which python)"
@@ -118,6 +139,9 @@ jobs:
           echo "python_numpy_include_dirs=${{ github.event.inputs.python_numpy_include_dirs }}"
           echo "python_ext_suffix=${{ github.event.inputs.python_ext_suffix || '.so' }}"
           echo "python_soabi=${{ github.event.inputs.python_soabi }}"
+          echo "python_dev_archive_url=${{ github.event.inputs.python_dev_archive_url }}"
+          ls -lah "$GITHUB_WORKSPACE/termux-python-dev/include/python3.13" | sed -n '1,20p'
+          ls -lah "$GITHUB_WORKSPACE/termux-python-dev/lib/libpython3.13.so"
 
       - name: Configure and build
         env:
@@ -126,8 +150,8 @@ jobs:
           ANDROID_ABI: ${{ github.event.inputs.android_abi || 'arm64-v8a' }}
           PYTHON_VERSION: ${{ github.event.inputs.python_version || '3.13' }}
           PYTHON3_EXECUTABLE: ${{ env.pythonLocation }}/bin/python
-          PYTHON_INCLUDE_DIR: ${{ github.event.inputs.python_include_dir }}
-          PYTHON_LIBRARY: ${{ github.event.inputs.python_library }}
+          PYTHON_INCLUDE_DIR: ${{ github.workspace }}/termux-python-dev/include/python3.13
+          PYTHON_LIBRARY: ${{ github.workspace }}/termux-python-dev/lib/libpython3.13.so
           PYTHON_PACKAGES_PATH: ${{ github.event.inputs.python_packages_path || '/data/data/com.termux/files/usr/lib/python3.13/site-packages' }}
           PYTHON_NUMPY_INCLUDE_DIRS: ${{ github.event.inputs.python_numpy_include_dirs }}
           PYTHON_EXT_SUFFIX: ${{ github.event.inputs.python_ext_suffix || '.so' }}
@@ -141,8 +165,8 @@ jobs:
           echo "PYTHON3_EXECUTABLE=$PYTHON3_EXECUTABLE"
           "$PYTHON3_EXECUTABLE" --version
           test -n "$ANDROID_NDK" || { echo 'ANDROID_NDK is required'; exit 1; }
-          test -n "$PYTHON_INCLUDE_DIR" || { echo 'python_include_dir is required for a real Termux Python 3.13 target build'; exit 1; }
-          test -n "$PYTHON_LIBRARY" || { echo 'python_library is required for a real Termux Python 3.13 target build'; exit 1; }
+          test -f "$PYTHON_INCLUDE_DIR/Python.h" || { echo "Python.h not found at $PYTHON_INCLUDE_DIR"; exit 1; }
+          test -f "$PYTHON_LIBRARY" || { echo "libpython not found at $PYTHON_LIBRARY"; exit 1; }
           bash scripts/configure_and_build.sh
 
       - name: Collect outputs
