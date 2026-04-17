@@ -16,6 +16,7 @@ set -euo pipefail
 : "${TERMUX_PREFIX:?TERMUX_PREFIX is required}"
 : "${BUILD_DIR:=build}"
 : "${INSTALL_PREFIX:=$PWD/out/install}"
+: "${PYTHON_INSTALL_STAGING:=$INSTALL_PREFIX/python-site-packages}"
 
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
@@ -75,16 +76,16 @@ cmake ../opencv \
   -DBUILD_LIST=core,imgproc,imgcodecs,python3 \
   -DBUILD_opencv_python2=OFF \
   -DBUILD_opencv_python3=ON \
-  -DOPENCV_PYTHON3_INSTALL_PATH="$PYTHON_PACKAGES_PATH" \
+  -DOPENCV_PYTHON3_INSTALL_PATH="$PYTHON_INSTALL_STAGING" \
   -DPYTHON_DEFAULT_EXECUTABLE="$PYTHON_HOST_EXECUTABLE" \
   -DPYTHON_DEFAULT_VERSION=3 \
   -DPYTHON_INCLUDE_DIR="$PYTHON_INCLUDE_DIR" \
   -DPYTHON_LIBRARY="$PYTHON_LIBRARY" \
-  -DPYTHON_PACKAGES_PATH="$PYTHON_PACKAGES_PATH" \
+  -DPYTHON_PACKAGES_PATH="$PYTHON_INSTALL_STAGING" \
   -DPYTHON3_EXECUTABLE="$PYTHON_HOST_EXECUTABLE" \
   -DPYTHON3_INCLUDE_DIR="$PYTHON_INCLUDE_DIR" \
   -DPYTHON3_LIBRARY="$PYTHON_LIBRARY" \
-  -DPYTHON3_PACKAGES_PATH="$PYTHON_PACKAGES_PATH" \
+  -DPYTHON3_PACKAGES_PATH="$PYTHON_INSTALL_STAGING" \
   -DPYTHON3_NUMPY_INCLUDE_DIRS="$PYTHON_NUMPY_INCLUDE_DIRS" \
   -DPYTHON3_NUMPY_VERSION="$PYTHON_NUMPY_VERSION" \
   -DPYTHON3_VERSION_STRING="$PYTHON_VERSION" \
@@ -139,6 +140,6 @@ cmake --build . --parallel 2>&1 | tee build.log
 cmake --install . 2>&1 | tee install.log
 
 printf '\n==== Produced Python artifacts ====\n'
-find . "$INSTALL_PREFIX" -path '*/site-packages/*' -o -name 'cv2*.so' | sort || true
+find . "$INSTALL_PREFIX" "$PYTHON_INSTALL_STAGING" -path '*/site-packages/*' -o -path "$PYTHON_INSTALL_STAGING/*" -o -name 'cv2*.so' | sort || true
 
 echo "Build complete: $INSTALL_PREFIX"
