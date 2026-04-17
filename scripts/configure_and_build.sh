@@ -108,6 +108,18 @@ cmake ../opencv \
   -DCMAKE_SHARED_LIBRARY_SONAME_CXX_FLAG="-Wl,-soname," \
   -DCMAKE_SHARED_LIBRARY_SONAME_C_FLAG="-Wl,-soname,"
 
+python3 - <<'PY'
+from pathlib import Path
+p = Path('CMakeCache.txt')
+s = p.read_text()
+for k in ['CMAKE_MODULE_LINKER_FLAGS:STRING', 'CMAKE_MODULE_LINKER_FLAGS_RELEASE:STRING', 'CMAKE_MODULE_LINKER_FLAGS_DEBUG:STRING']:
+    import re
+    s = re.sub(rf'^{re.escape(k)}=.*$', f'{k}=', s, flags=re.M)
+p.write_text(s)
+PY
+
+cmake .
+
 printf '\n==== Python/OpenCV CMake diagnosis ====\n'
 grep -E '^(PYTHON|Python3|OPENCV_PYTHON|BUILD_opencv_python|BUILD_LIST|CMAKE_TOOLCHAIN_FILE|ANDROID_)' CMakeCache.txt | sort || true
 printf '\n==== Python/OpenCV internal status ====\n'
