@@ -109,8 +109,8 @@ grep -E '^(PYTHON|Python3|OPENCV_PYTHON|BUILD_opencv_python|BUILD_LIST|CMAKE_TOO
 printf '\n==== Python/OpenCV internal status ====\n'
 grep -E '^(HAVE_opencv_python3|PYTHON3LIBS_FOUND|PYTHON3_LIBRARIES|PYTHON3_INCLUDE_PATH|PYTHON3_VERSION_STRING|PYTHON3_NUMPY_VERSION|OPENCV_MODULES_DISABLED_FORCE|OPENCV_MODULE_opencv_python3_LOCATION)' CMakeCache.txt || true
 
-cmake --build . --parallel
-cmake --install .
+cmake --build . --parallel 2>&1 | tee build.log
+cmake --install . 2>&1 | tee install.log
 
 printf '\n==== Produced Python artifacts ====\n'
 find . "$INSTALL_PREFIX" -path '*/site-packages/*' -o -name 'cv2*.so' | sort || true
