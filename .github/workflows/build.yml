@@ -151,6 +151,8 @@ jobs:
           mkdir -p artifacts
           [ -d build ] && tar -czf artifacts/build.tar.gz build || true
           [ -d out ] && tar -czf artifacts/out.tar.gz out || true
+          [ -f build/build.log ] && cp -f build/build.log artifacts/ || true
+          [ -f build/install.log ] && cp -f build/install.log artifacts/ || true
           find . -name 'cv2*.so' -print -exec cp -f {} artifacts/ \; || true
           find . -path '*/site-packages/*' -type f -print | sed -n '1,200p' || true
           find . -maxdepth 3 -type f \( -name 'CMakeCache.txt' -o -name '*.log' \) -print -exec cp -f {} artifacts/ \; || true
