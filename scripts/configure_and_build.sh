@@ -142,17 +142,33 @@ grep -E '^(HAVE_opencv_python3|PYTHON3LIBS_FOUND|PYTHON3_LIBRARIES|PYTHON3_INCLU
 
 python3 - <<'PY2'
 from pathlib import Path
-import re
+import os, re
 p = Path('build.ninja')
 s = p.read_text()
 s = s.replace(' -version ', ' ')
 s = s.replace(' -version\n', '\n')
 s = s.replace('= -version ', '= ')
-py = re.escape(__import__('os').environ['PYTHON_LIBRARY'])
-# Force cv2 final link line to carry libpython explicitly on Android.
-s = re.sub(rf'(lib/arm64-v8a/libopencv_core\.so\s+-latomic\s+-lm)(\s*&&\s*:)', rf'\1 {__import__("os").environ["PYTHON_LIBRARY"]}\2', s)
+libpython = os.environ['PYTHON_LIBRARY']
+patterns = [
+    r'(build\s+lib/arm64-v8a/python3/cv2\.cpython-313\.so:.*?\n\s+LINK_LIBRARIES = .*?)(\n)',
+    r'(lib/arm64-v8a/libopencv_core\.so\s+-latomic\s+-lm)(\s*&&\s*:)',
+]
+replaced = False
+m = re.search(patterns[0], s, flags=re.S)
+if m and libpython not in m.group(1):
+    s = s[:m.end(1)] + ' ' + libpython + s[m.end(1):]
+    replaced = True
+else:
+    s2, n = re.subn(patterns[1], rf'\1 {libpython}\2', s)
+    if n:
+        s = s2
+        replaced = True
 p.write_text(s)
+print(f'libpython_injected={replaced}')
 PY2
+
+echo '==== build.ninja cv2/libpython diagnosis ===='
+grep -n -E 'cv2\.cpython-313\.so|libpython3\.13\.so' build.ninja | sed -n '1,80p' || true
 
 cmake --build . --parallel 2>&1 | tee build.log
 cmake --install . 2>&1 | tee install.log
@@ -181,5 +197,9 @@ for so in "${TARGETS[@]}"; do
     exit 1
   fi
 done
+if ! readelf -d "$CV2_SO" | grep -F 'libpython3.13.so' >/dev/null; then
+  echo 'cv2 artifact is missing NEEDED libpython3.13.so' >&2
+  exit 1
+fi
 
 echo "Build complete: $INSTALL_PREFIX"
