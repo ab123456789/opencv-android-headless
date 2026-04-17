@@ -62,8 +62,17 @@ cmake ../opencv \
   -DBUILD_DOCS=OFF \
   -DBUILD_JPEG=ON \
   -DBUILD_PNG=ON \
-  -DBUILD_TIFF=ON \
-  -DBUILD_WEBP=ON \
+  -DBUILD_TIFF=OFF \
+  -DBUILD_WEBP=OFF \
+  -DBUILD_OPENJPEG=OFF \
+  -DWITH_AVIF=OFF \
+  -DWITH_IMGCODEC_AVIF=OFF \
+  -DWITH_TIFF=OFF \
+  -DWITH_WEBP=OFF \
+  -DWITH_OPENJPEG=OFF \
+  -DWITH_JASPER=OFF \
+  -DWITH_OPENEXR=OFF \
+  -DWITH_GDAL=OFF \
   -DWITH_QT=OFF \
   -DWITH_GTK=OFF \
   -DWITH_OPENGL=OFF \
@@ -145,5 +154,19 @@ cmake --install . 2>&1 | tee install.log
 
 printf '\n==== Produced Python artifacts ====\n'
 find . "$INSTALL_PREFIX" "$PYTHON_INSTALL_STAGING" -path '*/site-packages/*' -o -path "$PYTHON_INSTALL_STAGING/*" -o -name 'cv2*.so' | sort || true
+
+printf '\n==== cv2 dynamic dependencies ====\n'
+CV2_SO="$(find . "$INSTALL_PREFIX" "$PYTHON_INSTALL_STAGING" -name 'cv2*.so' -type f | head -n 1 || true)"
+if [[ -n "$CV2_SO" ]]; then
+  echo "cv2_so=$CV2_SO"
+  readelf -d "$CV2_SO" | grep NEEDED || true
+  if readelf -d "$CV2_SO" | grep -E 'libavif|libSvtAv1Enc|libQt|libEGL|libGL' >/dev/null; then
+    echo 'Unexpected GUI/AVIF dependency leaked into cv2 artifact' >&2
+    exit 1
+  fi
+else
+  echo 'cv2 artifact not found' >&2
+  exit 1
+fi
 
 echo "Build complete: $INSTALL_PREFIX"
