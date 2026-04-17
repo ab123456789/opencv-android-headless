@@ -62,10 +62,21 @@ index 93eab8c..4bdf951 100644
    if(NOT DEFINED BUILD_opencv_python2)
      set(__disable_python2 ON)
 diff --git a/modules/python/common.cmake b/modules/python/common.cmake
-index cd6c279..54fc3b4 100644
+index cd6c279..520d4ef 100644
 --- a/modules/python/common.cmake
 +++ b/modules/python/common.cmake
-@@ -72,7 +72,9 @@ if(TARGET gen_opencv_python_source)
+@@ -57,6 +57,10 @@ if(${PYTHON}_LIMITED_API)
+ endif()
+ 
+ if(APPLE)
++if(ANDROID)
++  set_target_properties(${the_module} PROPERTIES VERSION "" SOVERSION "")
++endif()
++
+   set_target_properties(${the_module} PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+ elseif(WIN32 OR OPENCV_FORCE_PYTHON_LIBS)
+   if(${PYTHON}_DEBUG_LIBRARIES AND NOT ${PYTHON}_LIBRARIES MATCHES "optimized.*debug")
+@@ -72,7 +76,9 @@ if(TARGET gen_opencv_python_source)
  endif()
  ocv_target_link_libraries(${the_module} PRIVATE ${deps})
  
