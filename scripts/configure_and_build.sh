@@ -63,10 +63,15 @@ cmake ../opencv \
   -DBUILD_JPEG=ON \
   -DBUILD_PNG=ON \
   -DBUILD_TIFF=OFF \
+  -DHAVE_TIFF=OFF \
   -DBUILD_WEBP=OFF \
+  -DHAVE_WEBP=OFF \
   -DBUILD_OPENJPEG=OFF \
+  -DHAVE_OPENJPEG=OFF \
   -DWITH_AVIF=OFF \
+  -DHAVE_AVIF=OFF \
   -DWITH_IMGCODEC_AVIF=OFF \
+  -DBUILD_opencv_imgcodecs=ON \
   -DWITH_TIFF=OFF \
   -DWITH_WEBP=OFF \
   -DWITH_OPENJPEG=OFF \
@@ -155,18 +160,26 @@ cmake --install . 2>&1 | tee install.log
 printf '\n==== Produced Python artifacts ====\n'
 find . "$INSTALL_PREFIX" "$PYTHON_INSTALL_STAGING" -path '*/site-packages/*' -o -path "$PYTHON_INSTALL_STAGING/*" -o -name 'cv2*.so' | sort || true
 
-printf '\n==== cv2 dynamic dependencies ====\n'
+printf '\n==== OpenCV/Python dynamic dependencies ====\n'
+TARGETS=()
 CV2_SO="$(find . "$INSTALL_PREFIX" "$PYTHON_INSTALL_STAGING" -name 'cv2*.so' -type f | head -n 1 || true)"
 if [[ -n "$CV2_SO" ]]; then
-  echo "cv2_so=$CV2_SO"
-  readelf -d "$CV2_SO" | grep NEEDED || true
-  if readelf -d "$CV2_SO" | grep -E 'libavif|libSvtAv1Enc|libQt|libEGL|libGL' >/dev/null; then
-    echo 'Unexpected GUI/AVIF dependency leaked into cv2 artifact' >&2
-    exit 1
-  fi
+  TARGETS+=("$CV2_SO")
 else
   echo 'cv2 artifact not found' >&2
   exit 1
 fi
+for so in   "$INSTALL_PREFIX/sdk/native/libs/$ANDROID_ABI/libopencv_imgcodecs.so"   "$INSTALL_PREFIX/sdk/native/libs/$ANDROID_ABI/libopencv_imgproc.so"   "$INSTALL_PREFIX/sdk/native/libs/$ANDROID_ABI/libopencv_core.so"
+do
+  [[ -f "$so" ]] && TARGETS+=("$so")
+done
+for so in "${TARGETS[@]}"; do
+  echo "-- deps for $so"
+  readelf -d "$so" | grep NEEDED || true
+  if readelf -d "$so" | grep -E 'libavif|libSvtAv1Enc|libQt|libEGL|libGL' >/dev/null; then
+    echo "Unexpected GUI/AVIF dependency leaked into $so" >&2
+    exit 1
+  fi
+done
 
 echo "Build complete: $INSTALL_PREFIX"
