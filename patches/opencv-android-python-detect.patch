@@ -1,13 +1,6 @@
-diff --git a/cmake/OpenCVDetectPython.cmake b/cmake/OpenCVDetectPython.cmake
-index 9d8531c..c06a123 100644
---- a/cmake/OpenCVDetectPython.cmake
-+++ b/cmake/OpenCVDetectPython.cmake
-@@ -123,6 +123,24 @@ if(NOT ${found})
-     if(NOT ANDROID AND NOT APPLE_FRAMEWORK)
-       ocv_check_environment_variables(${library_env} ${include_dir_env})
-       if(NOT ${${library_env}} STREQUAL "")
-           set(PYTHON_LIBRARY "${${library_env}}")
-@@ -173,6 +191,22 @@ if(NOT ${found})
+--- a/cmake/OpenCVDetectPython.cmake	2026-04-17 07:25:26.424989313 +0800
++++ b/cmake/OpenCVDetectPython.cmake	2026-04-17 07:25:26.569989313 +0800
+@@ -173,6 +173,24 @@
          unset(PYTHON_INCLUDE_DIR CACHE)
          unset(PYTHON_INCLUDE_DIR2 CACHE)
        endif()
