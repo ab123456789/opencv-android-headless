@@ -128,11 +128,15 @@ grep -E '^(HAVE_opencv_python3|PYTHON3LIBS_FOUND|PYTHON3_LIBRARIES|PYTHON3_INCLU
 
 python3 - <<'PY2'
 from pathlib import Path
+import re
 p = Path('build.ninja')
 s = p.read_text()
 s = s.replace(' -version ', ' ')
 s = s.replace(' -version\n', '\n')
 s = s.replace('= -version ', '= ')
+py = re.escape(__import__('os').environ['PYTHON_LIBRARY'])
+# Force cv2 final link line to carry libpython explicitly on Android.
+s = re.sub(rf'(lib/arm64-v8a/libopencv_core\.so\s+-latomic\s+-lm)(\s*&&\s*:)', rf'\1 {__import__("os").environ["PYTHON_LIBRARY"]}\2', s)
 p.write_text(s)
 PY2
 
