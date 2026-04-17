@@ -1,6 +1,8 @@
---- a/cmake/OpenCVDetectPython.cmake	2026-04-17 07:25:26.424989313 +0800
-+++ b/cmake/OpenCVDetectPython.cmake	2026-04-17 07:25:26.569989313 +0800
-@@ -173,6 +173,24 @@
+diff --git a/cmake/OpenCVDetectPython.cmake b/cmake/OpenCVDetectPython.cmake
+index a23fba6..02aa143 100644
+--- a/cmake/OpenCVDetectPython.cmake
++++ b/cmake/OpenCVDetectPython.cmake
+@@ -173,6 +173,24 @@ if(NOT ${found})
          unset(PYTHON_INCLUDE_DIR CACHE)
          unset(PYTHON_INCLUDE_DIR2 CACHE)
        endif()
@@ -25,3 +27,19 @@
      endif()
  
      if(NOT ANDROID AND NOT IOS AND NOT XROS)
+@@ -240,6 +258,15 @@ if(NOT ${found})
+                           OUTPUT_STRIP_TRAILING_WHITESPACE)
+         endif()
+       endif()
++    elseif(ANDROID)
++      set(_packages_path "${${packages_path}}")
++      set(_numpy_include_dirs "${${numpy_include_dirs}}")
++      if(NOT _numpy_version)
++        set(_numpy_version "android-crosscompile")
++      endif()
++      if(_libs_found AND _include_dir)
++        set(_include_path "${_include_dir}")
++      endif()
+     endif(NOT ANDROID AND NOT IOS AND NOT XROS)
+   endif()
+ 
