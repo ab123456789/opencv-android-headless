@@ -61,6 +61,21 @@ index 93eab8c..4bdf951 100644
  elseif(BUILD_opencv_world OR (WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug"))
    if(NOT DEFINED BUILD_opencv_python2)
      set(__disable_python2 ON)
+diff --git a/modules/python/common.cmake b/modules/python/common.cmake
+index cd6c279..54fc3b4 100644
+--- a/modules/python/common.cmake
++++ b/modules/python/common.cmake
+@@ -72,7 +72,9 @@ if(TARGET gen_opencv_python_source)
+ endif()
+ ocv_target_link_libraries(${the_module} PRIVATE ${deps})
+ 
+-if(DEFINED ${PYTHON}_CVPY_SUFFIX)
++if(DEFINED OPENCV_PYTHON3_EXT_SUFFIX AND "${PYTHON}" STREQUAL "PYTHON3")
++  set(CVPY_SUFFIX "${OPENCV_PYTHON3_EXT_SUFFIX}")
++elseif(DEFINED ${PYTHON}_CVPY_SUFFIX)
+   set(CVPY_SUFFIX "${${PYTHON}_CVPY_SUFFIX}")
+ else()
+   set(__python_ext_suffix_var "EXT_SUFFIX")
 diff --git a/modules/python/python3/CMakeLists.txt b/modules/python/python3/CMakeLists.txt
 index da86ba5..dc9ea0f 100644
 --- a/modules/python/python3/CMakeLists.txt
