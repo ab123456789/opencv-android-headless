@@ -43,3 +43,21 @@ index a23fba6..02aa143 100644
      endif(NOT ANDROID AND NOT IOS AND NOT XROS)
    endif()
  
+diff --git a/modules/python/CMakeLists.txt b/modules/python/CMakeLists.txt
+index 93eab8c..4bdf951 100644
+--- a/modules/python/CMakeLists.txt
++++ b/modules/python/CMakeLists.txt
+@@ -3,10 +3,12 @@
+ # ----------------------------------------------------------------------------
+ if(DEFINED OPENCV_INITIAL_PASS)  # OpenCV build
+ 
+-if(ANDROID OR APPLE_FRAMEWORK OR WINRT)
++if((ANDROID AND NOT OPENCV_ENABLE_ANDROID_PYTHON) OR APPLE_FRAMEWORK OR WINRT)
+   ocv_module_disable_(python2)
+   ocv_module_disable_(python3)
+   return()
++elseif(ANDROID AND OPENCV_ENABLE_ANDROID_PYTHON)
++  ocv_module_disable_(python2)
+ elseif(BUILD_opencv_world OR (WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug"))
+   if(NOT DEFINED BUILD_opencv_python2)
+     set(__disable_python2 ON)
