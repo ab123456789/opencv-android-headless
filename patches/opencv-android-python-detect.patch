@@ -87,7 +87,7 @@ index cd6c279..dab4c72 100644
    set(CVPY_SUFFIX "${${PYTHON}_CVPY_SUFFIX}")
  else()
    set(__python_ext_suffix_var "EXT_SUFFIX")
-@@ -104,6 +110,16 @@ set_target_properties(${the_module} PROPERTIES
+@@ -104,6 +110,17 @@ set_target_properties(${the_module} PROPERTIES
                        OUTPUT_NAME cv2
                        SUFFIX "${CVPY_SUFFIX}")
  
@@ -105,6 +105,7 @@ index cd6c279..dab4c72 100644
  if(ENABLE_SOLUTION_FOLDERS)
    set_target_properties(${the_module} PROPERTIES FOLDER "bindings")
  endif()
+
 diff --git a/modules/python/python3/CMakeLists.txt b/modules/python/python3/CMakeLists.txt
 index da86ba5..dc9ea0f 100644
 --- a/modules/python/python3/CMakeLists.txt
