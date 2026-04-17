@@ -132,6 +132,7 @@ jobs:
           PYTHON_NUMPY_INCLUDE_DIRS: ${{ github.event.inputs.python_numpy_include_dirs }}
           PYTHON_EXT_SUFFIX: ${{ github.event.inputs.python_ext_suffix || '.so' }}
           PYTHON_SOABI: ${{ github.event.inputs.python_soabi }}
+          OPENCV_ENABLE_ANDROID_PYTHON: 'ON'
           TERMUX_PREFIX: ${{ env.TERMUX_PREFIX }}
           BUILD_DIR: ${{ github.workspace }}/build
           INSTALL_PREFIX: ${{ github.workspace }}/out/install
