@@ -62,7 +62,7 @@ index 93eab8c..4bdf951 100644
    if(NOT DEFINED BUILD_opencv_python2)
      set(__disable_python2 ON)
 diff --git a/modules/python/common.cmake b/modules/python/common.cmake
-index cd6c279..520d4ef 100644
+index cd6c279..dab4c72 100644
 --- a/modules/python/common.cmake
 +++ b/modules/python/common.cmake
 @@ -57,6 +57,10 @@ if(${PYTHON}_LIMITED_API)
@@ -87,6 +87,17 @@ index cd6c279..520d4ef 100644
    set(CVPY_SUFFIX "${${PYTHON}_CVPY_SUFFIX}")
  else()
    set(__python_ext_suffix_var "EXT_SUFFIX")
+@@ -104,6 +110,10 @@ set_target_properties(${the_module} PROPERTIES
+                       OUTPUT_NAME cv2
+                       SUFFIX "${CVPY_SUFFIX}")
+ 
++if(ANDROID)
++  set_property(TARGET ${the_module} PROPERTY NO_SONAME ON)
++endif()
++
+ if(ENABLE_SOLUTION_FOLDERS)
+   set_target_properties(${the_module} PROPERTIES FOLDER "bindings")
+ endif()
 diff --git a/modules/python/python3/CMakeLists.txt b/modules/python/python3/CMakeLists.txt
 index da86ba5..dc9ea0f 100644
 --- a/modules/python/python3/CMakeLists.txt
